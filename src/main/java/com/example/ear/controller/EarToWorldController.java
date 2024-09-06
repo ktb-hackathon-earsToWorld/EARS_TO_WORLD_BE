@@ -28,6 +28,14 @@ public class EarToWorldController {
     }
 
     /**
+     * 텍스트 -> 요약 -> 음성파일
+     */
+    @PostMapping("/ear-to-world/text")
+    public ResponseEntity<String> earToWorldText(@RequestBody String text) throws IOException {
+        return ResponseEntity.ok().body(earToWorldService.summaryText(text));
+    }
+
+    /**
      * 음성 파일을 보내는 API
      */
     @PostMapping("/audio")

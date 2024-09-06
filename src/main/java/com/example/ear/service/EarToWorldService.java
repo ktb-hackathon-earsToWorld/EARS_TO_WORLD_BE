@@ -84,6 +84,26 @@ public class EarToWorldService {
                 .build();
     }
 
+    public String summaryText(String text) throws IOException {
+        text = text + "\n" + COMMNET;
+        String summaryResultFromChatGPT = chatGPTService.prompt(SummaryDto.of(text));
+        ResponseInputStream<SynthesizeSpeechResponse> resultFromAwsPolly = pollyService
+                .synthesizeSpeech(summaryResultFromChatGPT, "earToWorld.mp3");
+
+        ByteArrayOutputStream byteArrayOutputStream = dataToByteArray(resultFromAwsPolly);
+        byte[] result = byteArrayOutputStream.toByteArray();
+        InputStream inputStream = new ByteArrayInputStream(result);
+
+        // result 를 S3 에 저장
+        // S3 에 저장
+        String storeFileName = UUID.randomUUID().toString() + ".mp3";
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType("audio/mpeg");
+        amazonS3Client.putObject(bucket, storeFileName, inputStream, metadata);
+
+        return "https://like-lion-dynamo.s3.amazonaws.com/" + storeFileName;
+    }
+
     public String mainLogic(MultipartFile imageFile) throws IOException {
         // 1. S3 에 이미지 파일 저장 후 이미지 URL 가져오기
         String imageUrl = getImageUrlFromS3(imageFile);
@@ -110,7 +130,6 @@ public class EarToWorldService {
         String storeFileName = UUID.randomUUID().toString() + ".mp3";
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentType("audio/mpeg");
-        metadata.setContentLength(imageFile.getSize());
         amazonS3Client.putObject(bucket, storeFileName, inputStream, metadata);
 
         return "https://like-lion-dynamo.s3.amazonaws.com/" + storeFileName;
@@ -200,6 +219,7 @@ public class EarToWorldService {
         int post = originalFilename.lastIndexOf(".");
         return originalFilename.substring(post + 1);
     }
+
 
 
 }
