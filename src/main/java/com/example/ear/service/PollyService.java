@@ -36,9 +36,13 @@ public class PollyService {
     private PollyClient pollyClient;
 
     public ResponseInputStream<SynthesizeSpeechResponse> synthesizeSpeech(String text, String outputFileName) {
+        // 말하기 느리게 조절하기
+        String ssmlText = "<speak><prosody rate='slow'>" + text + "</prosody></speak>";
         // 음성 합성 요청 생성
         SynthesizeSpeechRequest request = SynthesizeSpeechRequest.builder()
-                .text(text)
+                //.text(text)
+                .text(ssmlText)
+                .textType("ssml")
                 .outputFormat(OutputFormat.MP3) // 출력 형식 설정 (MP3 또는 OGG_VORBIS 등)
                 .voiceId(VoiceId.SEOYEON) // 사용할 음성 설정
                 .build();
