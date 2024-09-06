@@ -31,9 +31,9 @@ public class EarToWorldController {
      * 음성 파일을 보내는 API
      */
     @PostMapping("/audio")
-    public ResponseEntity<String> sendAudioFile(@RequestPart("voiceFile") MultipartFile voiceFile,
-                                                @RequestParam("receiveLoginId") String receiveLoginId) throws IOException {
-        return ResponseEntity.ok().body(earToWorldService.sendRecordVoiceFile(voiceFile,receiveLoginId));
+    public ResponseEntity<String> sendAudioFile(@RequestParam("receiveLoginId") String receiveLoginId,
+                                                @RequestBody String voiceRecordUrl) throws IOException {
+        return ResponseEntity.ok().body(earToWorldService.sendRecordVoiceFile(voiceRecordUrl,receiveLoginId));
     }
 
 }

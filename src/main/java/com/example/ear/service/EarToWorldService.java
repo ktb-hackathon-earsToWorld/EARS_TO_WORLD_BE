@@ -120,11 +120,7 @@ public class EarToWorldService {
      * 음성 파일을 사용자에게 보내는 로직
      */
 
-    public String sendRecordVoiceFile(MultipartFile voiceRecordFile , String receiveLoginId) throws IOException {
-
-        // byte[] 파일을 S3 에 저장
-        String voiceRecordUrl= getVoiceRecordUrlFromS3(voiceRecordFile);
-
+    public String sendRecordVoiceFile(String voiceRecordUrl , String receiveLoginId) throws IOException {
         Member member = memberRepository.findByLoginId(receiveLoginId);
 
         if (member == null) {
