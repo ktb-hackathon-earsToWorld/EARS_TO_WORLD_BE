@@ -6,11 +6,16 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.example.ear.dto.request.ChatGptRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -37,6 +42,9 @@ public class EarToWorldService {
     private static final String COMMNET = "위 내용을 장애인과 노인들이 이해할 수 있도록 어려운 말들은 " +
             "부가설명을 해주고 전체적인 내용을 쉽고 자세하게 구어체로 요약해줘";
 
+    // TODO: 9/6/24 localhost -> 배포된 환경으로 변경해야합니다.
+    private static final String SEND_ENDPOINT = "http://localhost:8080/audio";
+
     @Value("${cloud.aws.credentials.access-key}")
     private String s3AccessKey;
 
@@ -56,6 +64,7 @@ public class EarToWorldService {
     private final NaverOrcApiService naverOrcApiService;
     private final AmazonS3Client amazonS3Client;
     private final PollyService pollyService;
+    private final RestTemplate restTemplate;
 
 
 
@@ -89,6 +98,21 @@ public class EarToWorldService {
         // 5-1)
         // 음성 데이터를 읽어 바이트 배열로 변환
         return dataToByteArray(resultFromAwsPolly);
+    }
+
+    /**
+     * 음성 파일을 사용자에게 보내는 로직
+     */
+    public String sendRecordVoiceFile(byte[] voiceRecordFile , Long receiveMemberId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Type", "audio/mpeg"); // 적절한 MIME 타입 설정
+        HttpEntity<byte[]> requestEntity = new HttpEntity<>(voiceRecordFile, headers);
+
+        ResponseEntity<String> response = restTemplate
+                .exchange(SEND_ENDPOINT + "/" + receiveMemberId, HttpMethod.POST, requestEntity, String.class);
+
+        log.info("response from server : " + response.getBody());
+        return "ok";
     }
 
     private static ByteArrayOutputStream dataToByteArray(ResponseInputStream<SynthesizeSpeechResponse> resultFromAwsPolly) throws IOException {
