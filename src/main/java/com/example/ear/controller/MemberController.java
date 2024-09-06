@@ -5,6 +5,7 @@ import com.example.ear.dto.request.JoinRequestDto;
 import com.example.ear.dto.request.LoginRequestDto;
 import com.example.ear.dto.response.JoinResponseDto;
 import com.example.ear.dto.response.LoginResponseDto;
+import com.example.ear.global.SessionConst;
 import com.example.ear.service.MemberService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 public class MemberController {
     private final MemberService memberService;
-    private static final String SESSION_CONST = "EARS_TO_EAR_SESSION";
     @PostMapping("/join")
     public ResponseEntity<JoinResponseDto> join(@RequestBody JoinRequestDto joinRequestDto) {
         return ResponseEntity.ok().body(memberService.join(joinRequestDto));
@@ -36,7 +36,7 @@ public class MemberController {
         }
         // 로그인 성공시
         HttpSession session = request.getSession();
-        session.setAttribute(SESSION_CONST , loginRequestDto.getLoginId());
+        session.setAttribute(SessionConst.SESSION_CONST, loginRequestDto.getLoginId());
         LoginResponseDto response = LoginResponseDto.builder()
                 .loginId(loginRequestDto.getLoginId())
                 .memberId(loginMember.getId())
