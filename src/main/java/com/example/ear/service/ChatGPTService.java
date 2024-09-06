@@ -113,44 +113,6 @@ public class ChatGPTService {
         return resultList;
     }
 
-    public String prompt(MultipartFile imageFile) throws IOException {
-        //파일의 원본 이름
-        String originalFileName = imageFile.getOriginalFilename();
-
-        //DB에 저장될 파일 이름
-        String storeFileName = createStoreFileName(originalFileName);
-
-        // S3 에 저장
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentType(imageFile.getContentType());
-        metadata.setContentLength(imageFile.getSize());
-        amazonS3Client.putObject(bucket, storeFileName, imageFile.getInputStream(), metadata);
-
-        // 저장한거 바로 가지고 와서 gpt 에 넘기고 그 이미지 분석한 값을 String 으로 가져오기
-        String imageUrl = getFileUrl(storeFileName);
-
-
-        // 요청 본문 설정
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("image_url", imageUrl);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + secretKey);
-        headers.set("Content-Type", "application/json");
-
-        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
-
-        // API 요청
-        ResponseEntity<String> response = chatGPTConfig
-                .restTemplate()
-                .exchange(imagePromptUrl, HttpMethod.POST, requestEntity, String.class);
-
-        // 응답 처리
-        JsonNode jsonResponse = om.readTree(response.getBody());
-        log.info("jsonResponse = {} ", jsonResponse.toString());
-        return "ok";
-    }
-
     /**
      * 1. 이미지 파일을 OCR 을 통해 텍스트들을 추출합니다.
      */

@@ -114,7 +114,7 @@ public class EarToWorldService {
         metadata.setContentLength(imageFile.getSize());
         amazonS3Client.putObject(bucket, storeFileName, imageFile.getInputStream(), metadata);
 
-        return getFileUrl(storeFileName);
+        return "https://like-lion-dynamo.s3.amazonaws.com/" + storeFileName;
     }
 
     private String createStoreFileName(String originalFilename) {
@@ -128,16 +128,6 @@ public class EarToWorldService {
     private String extractExt(String originalFilename) {
         int post = originalFilename.lastIndexOf(".");
         return originalFilename.substring(post + 1);
-    }
-
-    public String getFileUrl(String fileName) {
-        S3Client s3 = s3Client();
-        // 객체의 URL을 가져오는 메서드
-        URL url = s3.utilities().getUrl(GetUrlRequest.builder()
-                .bucket(bucket)
-                .key(fileName)
-                .build());
-        return url.toString();
     }
 
 
