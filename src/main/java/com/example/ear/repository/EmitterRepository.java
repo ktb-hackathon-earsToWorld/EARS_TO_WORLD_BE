@@ -17,6 +17,10 @@ public class EmitterRepository {
     private Map<String, SseEmitter> emitterMap = new ConcurrentHashMap<>();
 
     public SseEmitter save(Long memberId, SseEmitter emitter) {
+        log.info("emitterMap.length = {} " , emitterMap.size());
+        for (String s : emitterMap.keySet()) {
+            System.out.println(emitterMap.get(s));
+        }
         final String key = getKey(memberId);
         emitterMap.put(key, emitter);
         return emitter;
