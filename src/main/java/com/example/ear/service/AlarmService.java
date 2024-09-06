@@ -39,7 +39,7 @@ public class AlarmService {
             log.info("send");
             // send() 로 이벤트 전송
             emitter.send(SseEmitter.event()
-                    .id("id")
+                    .id(ALARM_NAME)
                     // 프론트에서 설정한 이벤트와 같은 이벤트를 넣어줘야 한다.
                     .name(ALARM_NAME)
                     .data("connect completed"));

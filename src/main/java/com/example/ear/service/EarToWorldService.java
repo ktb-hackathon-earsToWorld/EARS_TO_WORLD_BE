@@ -148,7 +148,7 @@ public class EarToWorldService {
                     try {
                         log.info("send 시작");
                         it.send(SseEmitter.event()
-                                .id("id")
+                                .id(ALARM_NAME)
                                 .name(ALARM_NAME)
                                 .data(voiceRecordUrl));
                         log.info("send 끝");
