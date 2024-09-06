@@ -1,0 +1,42 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  datasource:
+    hikari:
+      jdbc-url: jdbc:mysql://${DB_HOST}:3306/earsToWorld
+      username: ${DB_NAME}
+      password: ${DB_PASSWORD}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST}:3306/ears-to-world
+
+cloud:
+  aws:
+    s3:
+      bucket: ${BUCKET_NAME}
+    region.static: ${REGION_STATIC}
+    credentials:
+      access-key: ${IAM_ACCESS_KEY}
+      secret-key: ${IAM_SECRET_KEY}
+
+openai:
+  secret-key: ${OPNE_AI_SECRET_KEY}
+  url:
+    model: https://api.openai.com/v1/models
+    model-list: https://api.openai.com/v1/models/
+    prompt: https://api.openai.com/v1/chat/completions
+    image-prompt: https://api.openai.com/v1/images/analyze
+
+naver:
+  service:
+    url:  https://4d5iykp6u4.apigw.ntruss.com/custom/v1/34080/d7c0984779b7822c77ab0a57b52f35c1609b5555cf694ff962b43289d0350027/general
+    secretKey: ${NAVER_SECRET_KEY}
