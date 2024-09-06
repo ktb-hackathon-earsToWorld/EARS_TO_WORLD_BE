@@ -70,11 +70,7 @@ public class EarToWorldService {
     private final MemberRepository memberRepository;
     private final AmazonS3Client amazonS3Client;
     private final PollyService pollyService;
-    private final RestTemplate restTemplate;
-    private final AlarmService alarmService;
     private final EmitterRepository emitterRepository;
-
-
 
     private S3Client s3Client() {
         AwsBasicCredentials awsCreds = AwsBasicCredentials.create(s3AccessKey, s3SecretKey);
@@ -126,7 +122,6 @@ public class EarToWorldService {
         byte[] result = byteArrayOutputStream.toByteArray();
         InputStream inputStream = new ByteArrayInputStream(result);
 
-        // result 를 S3 에 저장
         // S3 에 저장
         String storeFileName = UUID.randomUUID().toString() + ".mp3";
         ObjectMetadata metadata = new ObjectMetadata();
@@ -140,8 +135,9 @@ public class EarToWorldService {
     /**
      * 음성 파일을 사용자에게 보내는 로직
      */
-
     public String sendRecordVoiceFile(String voiceRecordUrl , String receiveLoginId) throws IOException {
+
+        log.info("sendRecordVoiceFile 시작");
         Member member = memberRepository.findByLoginId(receiveLoginId);
 
         if (member == null) {
@@ -164,6 +160,7 @@ public class EarToWorldService {
                 },
                 () -> log.info("No emitter founded")
         );
+        log.info("sendRecordVoiceFile 끝");
         return "SSE 를 통한 알람 전송 성공";
     }
 
