@@ -8,6 +8,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.management.RuntimeMBeanException;
 import java.io.IOException;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,8 +22,15 @@ public class AlarmService {
 
     public SseEmitter connectNotification(Long memberId) {
 
+        log.info("connectNotification : " + memberId);
+
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
         emitterRepository.save(memberId, emitter);
+
+        log.info("emitter.ref : " + emitter.hashCode());
+
+        Optional<SseEmitter> sseEmitter = emitterRepository.get(memberId);
+        log.info("sseEmitter : " + sseEmitter.get());
 
         emitter.onCompletion(() -> emitterRepository.delete(memberId));
         emitter.onTimeout(() -> emitterRepository.delete(memberId));

@@ -136,7 +136,6 @@ public class EarToWorldService {
      * 음성 파일을 사용자에게 보내는 로직
      */
     public String sendRecordVoiceFile(String voiceRecordUrl , String receiveLoginId) throws IOException {
-
         log.info("sendRecordVoiceFile 시작");
         Member member = memberRepository.findByLoginId(receiveLoginId);
 
@@ -149,7 +148,7 @@ public class EarToWorldService {
                     try {
                         log.info("send 시작");
                         it.send(SseEmitter.event()
-                                .id(member.getId().toString())
+                                .id("id")
                                 .name(ALARM_NAME)
                                 .data(VoiceRecordRequestDto.of(voiceRecordUrl,member.getId())));
                         log.info("send 끝");
