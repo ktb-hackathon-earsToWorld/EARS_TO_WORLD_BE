@@ -99,9 +99,10 @@ public class EarToWorldService {
         String storeFileName = UUID.randomUUID().toString() + ".mp3";
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentType("audio/mpeg");
+        metadata.setContentLength(result.length);
         amazonS3Client.putObject(bucket, storeFileName, inputStream, metadata);
 
-        return "https://like-lion-dynamo.s3.amazonaws.com/" + storeFileName;
+        return storeFileName;
     }
 
     public String mainLogic(MultipartFile imageFile) throws IOException {
@@ -130,9 +131,10 @@ public class EarToWorldService {
         String storeFileName = UUID.randomUUID().toString() + ".mp3";
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentType("audio/mpeg");
+        metadata.setContentLength(imageFile.getSize());
         amazonS3Client.putObject(bucket, storeFileName, inputStream, metadata);
 
-        return "https://like-lion-dynamo.s3.amazonaws.com/" + storeFileName;
+        return storeFileName;
     }
 
     /**
