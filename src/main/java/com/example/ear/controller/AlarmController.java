@@ -13,12 +13,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequiredArgsConstructor
 @RequestMapping("/api")
 public class AlarmController {
-
     private final AlarmService alarmService;
-
+    /**
+     * 메인 화면에 오면 바로 구독하도록 해당 API 호출 해야합니다.
+     */
     @GetMapping(value = "/subscribe/{member-id}")
     public SseEmitter subscribe(@PathVariable("member-id") Long memberId) {
         return alarmService.connectNotification(memberId);
     }
-
 }

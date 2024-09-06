@@ -23,34 +23,17 @@ public class EarToWorldController {
      * 이미지 파일 -> 음성 파일 (비즈니스 로직)
      */
     @PostMapping("/ear-to-world")
-    public ResponseEntity<byte[]> earToWorld(@RequestPart("imageFile") MultipartFile imageFile) throws IOException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Type", "audio/mpeg"); // 적절한 MIME 타입 설정
-        // inline 은 다운로드 하지 않고, 페이지 내에서 바로 재생 처리
-        headers.add("Content-Disposition", "inline; filename=speech.mp3");
-        return new ResponseEntity<>(earToWorldService.mainLogic(imageFile).toByteArray(),headers, HttpStatus.OK);
+    public ResponseEntity<String> earToWorld(@RequestPart("imageFile") MultipartFile imageFile) throws IOException {
+        return ResponseEntity.ok().body(earToWorldService.mainLogic(imageFile));
     }
 
     /**
      * 음성 파일을 보내는 API
      */
-    @PostMapping("/audio/{receive-id}/out")
-    public ResponseEntity<String> sendAudioFile(@RequestPart("file") MultipartFile file,
-                                                   @PathVariable("receive-id") Long receiveMemberId) throws IOException {
-        byte[] voiceRecordFile = file.getBytes();
-        return ResponseEntity.ok().body(earToWorldService.sendRecordVoiceFile(voiceRecordFile,receiveMemberId));
+    @PostMapping("/audio")
+    public ResponseEntity<String> sendAudioFile(@RequestPart("voiceFile") MultipartFile voiceFile,
+                                                @RequestParam("receiveLoginId") String receiveLoginId) throws IOException {
+        return ResponseEntity.ok().body(earToWorldService.sendRecordVoiceFile(voiceFile,receiveLoginId));
     }
-
-    /**
-     * 음성 파일을 받는 API
-     */
-/*    @GetMapping("/audio/{receive-id}/in")
-    public ResponseEntity<String> receiveAudioFile(@RequestPart("file") MultipartFile file,
-                                                   @PathVariable("receive-id") Long receiveMemberId,
-                                                   HttpServletRequest httpServletRequest) throws IOException {
-        byte[] voiceRecordFile = file.getBytes();
-        earToWorldService.sendRecordVoiceFile(voiceRecordFile,receiveMemberId);
-    }*/
-
 
 }

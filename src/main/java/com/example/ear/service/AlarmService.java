@@ -19,30 +19,6 @@ public class AlarmService {
     private final EmitterRepository emitterRepository;
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60;
 
-/*    public void send(AlarmType type, AlarmArgs args, Integer receiverId) {
-        UserEntity userEntity = userEntityRepository
-                .findById(receiverId)
-                .orElseThrow(()
-                        -> new SimpleSnsApplicationException(ErrorCode.USER_NOT_FOUND));
-        AlarmEntity entity = AlarmEntity.of(type, args, userEntity);
-        alarmEntityRepository.save(entity);
-        emitterRepository.get(receiverId).ifPresentOrElse(it -> {
-                    try {
-                        it.send(SseEmitter.event()
-                                .id(entity.getId().toString())
-                                .name(ALARM_NAME)
-                                .data(new AlarmNoti()));
-                    } catch (IOException exception) {
-                        emitterRepository.delete(receiverId);
-                        throw new SimpleSnsApplicationException(ErrorCode.NOTIFICATION_CONNECT_ERROR);
-                    }
-                },
-                // 유저가 브라우저에 접속하지 않은 상황을 수 있기 때문?
-                () -> log.info("No emitter founded")
-        );
-    }*/
-
-
     public SseEmitter connectNotification(Long memberId) {
 
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);

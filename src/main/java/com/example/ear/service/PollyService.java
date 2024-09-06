@@ -40,7 +40,7 @@ public class PollyService {
         SynthesizeSpeechRequest request = SynthesizeSpeechRequest.builder()
                 .text(text)
                 .outputFormat(OutputFormat.MP3) // 출력 형식 설정 (MP3 또는 OGG_VORBIS 등)
-                .voiceId(VoiceId.JOANNA) // 사용할 음성 설정
+                .voiceId(VoiceId.SEOYEON) // 사용할 음성 설정
                 .build();
 
         // Polly API 호출하여 음성 파일 생성

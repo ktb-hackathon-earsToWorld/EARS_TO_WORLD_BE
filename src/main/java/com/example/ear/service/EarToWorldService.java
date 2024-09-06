@@ -3,7 +3,11 @@ package com.example.ear.service;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.example.ear.domain.Member;
 import com.example.ear.dto.request.ChatGptRequest;
+import com.example.ear.dto.request.VoiceRecordRequestDto;
+import com.example.ear.repository.EmitterRepository;
+import com.example.ear.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -25,9 +30,7 @@ import software.amazon.awssdk.services.polly.model.SynthesizeSpeechResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.UUID;
 
@@ -43,7 +46,9 @@ public class EarToWorldService {
             "부가설명을 해주고 전체적인 내용을 쉽고 자세하게 구어체로 요약해줘";
 
     // TODO: 9/6/24 localhost -> 배포된 환경으로 변경해야합니다.
-    private static final String SEND_ENDPOINT = "http://localhost:8080/audio";
+    private static final String SEND_ENDPOINT = "http://localhost:8080/api/audio";
+
+    private final static String ALARM_NAME = "alarm";
 
     @Value("${cloud.aws.credentials.access-key}")
     private String s3AccessKey;
@@ -62,9 +67,12 @@ public class EarToWorldService {
 
     private final ChatGPTService chatGPTService;
     private final NaverOrcApiService naverOrcApiService;
+    private final MemberRepository memberRepository;
     private final AmazonS3Client amazonS3Client;
     private final PollyService pollyService;
     private final RestTemplate restTemplate;
+    private final AlarmService alarmService;
+    private final EmitterRepository emitterRepository;
 
 
 
@@ -76,7 +84,7 @@ public class EarToWorldService {
                 .build();
     }
 
-    public ByteArrayOutputStream mainLogic(MultipartFile imageFile) throws IOException {
+    public String mainLogic(MultipartFile imageFile) throws IOException {
         // 1. S3 에 이미지 파일 저장 후 이미지 URL 가져오기
         String imageUrl = getImageUrlFromS3(imageFile);
 
@@ -93,26 +101,53 @@ public class EarToWorldService {
         ResponseInputStream<SynthesizeSpeechResponse> resultFromAwsPolly = pollyService
                 .synthesizeSpeech(summaryResultFromChatGPT, "earToWorld.mp3");
 
-        // 5. 응답 받은 음성 파일을 클라이언트에게 반환하기
+        ByteArrayOutputStream byteArrayOutputStream = dataToByteArray(resultFromAwsPolly);
+        byte[] result = byteArrayOutputStream.toByteArray();
+        InputStream inputStream = new ByteArrayInputStream(result);
 
-        // 5-1)
-        // 음성 데이터를 읽어 바이트 배열로 변환
-        return dataToByteArray(resultFromAwsPolly);
+        // result 를 S3 에 저장
+        // S3 에 저장
+        String storeFileName = UUID.randomUUID().toString() + ".mp3";
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType("audio/mpeg");
+        metadata.setContentLength(imageFile.getSize());
+        amazonS3Client.putObject(bucket, storeFileName, inputStream, metadata);
+
+        return "https://like-lion-dynamo.s3.amazonaws.com/" + storeFileName;
     }
 
     /**
      * 음성 파일을 사용자에게 보내는 로직
      */
-    public String sendRecordVoiceFile(byte[] voiceRecordFile , Long receiveMemberId) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Type", "audio/mpeg"); // 적절한 MIME 타입 설정
-        HttpEntity<byte[]> requestEntity = new HttpEntity<>(voiceRecordFile, headers);
 
-        ResponseEntity<String> response = restTemplate
-                .exchange(SEND_ENDPOINT + "/" + receiveMemberId, HttpMethod.POST, requestEntity, String.class);
+    public String sendRecordVoiceFile(MultipartFile voiceRecordFile , String receiveLoginId) throws IOException {
 
-        log.info("response from server : " + response.getBody());
-        return "ok";
+        // byte[] 파일을 S3 에 저장
+        String voiceRecordUrl= getVoiceRecordUrlFromS3(voiceRecordFile);
+
+        Member member = memberRepository.findByLoginId(receiveLoginId);
+
+        if (member == null) {
+            throw new RuntimeException("존재하지 않는 login Id 입니다.");
+        }
+
+        // SSE 로 알람 보내기
+        emitterRepository.get(member.getId()).ifPresentOrElse(it -> {
+                    try {
+                        log.info("send 시작");
+                        it.send(SseEmitter.event()
+                                .id(member.getId().toString())
+                                .name(ALARM_NAME)
+                                .data(VoiceRecordRequestDto.of(voiceRecordUrl,member.getId())));
+                        log.info("send 끝");
+                    } catch (IOException exception) {
+                        emitterRepository.delete(member.getId());
+                        throw new RuntimeException("알람 로직에서 오류가 발생했습니다.");
+                    }
+                },
+                () -> log.info("No emitter founded")
+        );
+        return "SSE 를 통한 알람 전송 성공";
     }
 
     private static ByteArrayOutputStream dataToByteArray(ResponseInputStream<SynthesizeSpeechResponse> resultFromAwsPolly) throws IOException {
@@ -137,6 +172,22 @@ public class EarToWorldService {
         metadata.setContentType(imageFile.getContentType());
         metadata.setContentLength(imageFile.getSize());
         amazonS3Client.putObject(bucket, storeFileName, imageFile.getInputStream(), metadata);
+
+        return "https://like-lion-dynamo.s3.amazonaws.com/" + storeFileName;
+    }
+
+    private String getVoiceRecordUrlFromS3(MultipartFile voiceFile) throws IOException {
+        //파일의 원본 이름
+        String originalFileName = voiceFile.getOriginalFilename();
+
+        //DB에 저장될 파일 이름
+        String storeFileName = createStoreFileName(originalFileName);
+
+        // S3 에 저장
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(voiceFile.getContentType());
+        metadata.setContentLength(voiceFile.getSize());
+        amazonS3Client.putObject(bucket, storeFileName, voiceFile.getInputStream(), metadata);
 
         return "https://like-lion-dynamo.s3.amazonaws.com/" + storeFileName;
     }
