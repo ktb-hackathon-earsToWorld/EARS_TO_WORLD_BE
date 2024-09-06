@@ -150,7 +150,7 @@ public class EarToWorldService {
                         it.send(SseEmitter.event()
                                 .id("id")
                                 .name(ALARM_NAME)
-                                .data(VoiceRecordRequestDto.of(voiceRecordUrl,member.getId())));
+                                .data(voiceRecordUrl));
                         log.info("send 끝");
                     } catch (IOException exception) {
                         emitterRepository.delete(member.getId());
